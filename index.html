@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Para Clérgia Furtado</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #f4efe9;
+            font-family: 'Georgia', serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            perspective: 1500px;
+            overflow: hidden;
+            padding: 20px;
+        }
+
+        .instrucao {
+            position: absolute;
+            top: 20px;
+            font-size: 0.9rem;
+            color: #8c7b6e;
+            font-style: italic;
+            text-align: center;
+            width: 100%;
+            z-index: 100;
+        }
+
+        /* Estrutura de Cartões Empilhados */
+        .book {
+            position: relative;
+            width: 90vw;
+            max-width: 380px;
+            height: 70vh;
+            max-height: 500px;
+            z-index: 5;
+        }
+
+        /* Cada página funciona como uma lâmina empilhada */
+        .page {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.8s, z-index 0.8s;
+            transform-style: preserve-3d;
+        }
+
+        /* O conteúdo interno da página */
+        .front {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            padding: 25px;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background: #fffdfa;
+            border: 1px solid #eadecc;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        @media (min-width: 400px) {
+            .front { padding: 40px; }
+        }
+
+        /* Capa do Livro */
+        .cover-front {
+            background: url(https://github.com/alannascimentolira-debug/forclergia/blob/main/Foto%201.jpeg?raw=true) center/cover no-repeat;
+            color: #ffffff;
+            text-align: center;
+            border: none;
+        }
+
+        .cover-front h1 {
+            font-size: 1.6rem;
+            margin-bottom: 15px;
+            letter-spacing: 2px;
+            text-shadow: 1px 1px 4px rgba(0,0,0,0.6);
+        }
+
+        .cover-front p {
+            font-size: 1rem;
+            font-style: italic;
+            opacity: 0.95;
+            text-shadow: 1px 1px 4px rgba(0,0,0,0.6);
+        }
+
+        /* Conteúdo do Texto */
+        .content {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #3a332d;
+            text-align: justify;
+        }
+
+        @media (min-width: 360px) {
+            .content { font-size: 1.05rem; }
+        }
+
+        .poem {
+            font-style: italic;
+            text-align: center;
+            line-height: 1.6;
+            color: #4a3b32;
+            font-size: 0.9rem;
+        }
+
+        @media (min-width: 360px) {
+            .poem { font-size: 1rem; line-height: 1.8; }
+        }
+
+        .date-header {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #8a2528;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        /* Lógica de ocultar Checkbox */
+        input[type="checkbox"] {
+            display: none;
+        }
+
+        /* ESTILIZAÇÃO DAS SETAS NAVEGADORAS */
+        .btn-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 45px;
+            height: 45px;
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid #eadecc;
+            border-radius: 50%;
+            display: none; /* Escondidos por padrão, controlados pelo CSS abaixo */
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            font-size: 1.2rem;
+            color: #8a2528;
+            font-weight: bold;
+            user-select: none;
+            transition: background 0.3s, transform 0.2s;
+        }
+        
+        .btn-nav:active {
+            transform: translateY(-50%) scale(0.9);
+        }
+
+        .btn-next { right: -25px; }
+        .btn-prev { left: -25px; }
+
+        /* Responsividade para as setas não colarem na borda em telas muito pequenas */
+        @media (max-width: 450px) {
+            .btn-next { right: 5px; }
+            .btn-prev { left: 5px; }
+        }
+
+        /* CONTROLE DE EXIBIÇÃO DAS SETAS BASEADO NOS CHECKBOXES ATIVOS */
+        
+        /* Estado Inicial: Mostra Avançar da Pág 1. Voltar fica oculto (não há o que voltar) */
+        #next1 { display: flex; }
+
+        /* Quando P1 está marcado (Pág 1 sumiu, estamos na Pág 2) */
+        #p1:checked ~ .btn-next { display: none; } /* Reseta o padrão */
+        #p1:checked ~ #next2 { display: flex; }
+        #p1:checked ~ #prev1 { display: flex; }
+
+        /* Quando P2 está marcado (Estamos na Pág 3) */
+        #p2:checked ~ .btn-next, #p2:checked ~ .btn-prev { display: none; }
+        #p2:checked ~ #next3 { display: flex; }
+        #p2:checked ~ #prev2 { display: flex; }
+
+        /* Quando P3 está marcado (Estamos na Pág 4) */
+        #p3:checked ~ .btn-next, #p3:checked ~ .btn-prev { display: none; }
+        #p3:checked ~ #next4 { display: flex; }
+        #p3:checked ~ #prev3 { display: flex; }
+
+        /* Quando P4 está marcado (Estamos na Pág 5) */
+        #p4:checked ~ .btn-next, #p4:checked ~ .btn-prev { display: none; }
+        #p4:checked ~ #next5 { display: flex; }
+        #p4:checked ~ #prev4 { display: flex; }
+
+        /* Quando P5 está marcado (Estamos na Pág 6) */
+        #p5:checked ~ .btn-next, #p5:checked ~ .btn-prev { display: none; }
+        #p5:checked ~ #next6 { display: flex; }
+        #p5:checked ~ #prev5 { display: flex; }
+
+        /* Quando P6 está marcado (Estamos na Pág 7) */
+        #p6:checked ~ .btn-next, #p6:checked ~ .btn-prev { display: none; }
+        #p6:checked ~ #next7 { display: flex; }
+        #p6:checked ~ #prev6 { display: flex; }
+
+        /* Quando P7 está marcado (Estamos na Pág 8) */
+        #p7:checked ~ .btn-next, #p7:checked ~ .btn-prev { display: none; }
+        #p7:checked ~ #next8 { display: flex; }
+        #p7:checked ~ #prev7 { display: flex; }
+
+        /* Quando P8 está marcado (Estamos na Pág 9 - Foto Final. Seta avançar some de vez) */
+        #p8:checked ~ .btn-prev { display: none; }
+        #p8:checked ~ #prev8 { display: flex; }
+
+
+        /* COMPORTAMENTO DE DESLOCAMENTO DA PÁGINA (PUXAR) */
+        #p1:checked ~ .book #page1,
+        #p2:checked ~ .book #page2,
+        #p3:checked ~ .book #page3,
+        #p4:checked ~ .book #page4,
+        #p5:checked ~ .book #page5,
+        #p6:checked ~ .book #page6,
+        #p7:checked ~ .book #page7,
+        #p8:checked ~ .book #page8,
+        #p9:checked ~ .book #page9 {
+            transform: translateX(-120%) rotate(-10deg);
+            opacity: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Ordem de empilhamento inicial */
+        #page1 { z-index: 9; }
+        #page2 { z-index: 8; }
+        #page3 { z-index: 7; }
+        #page4 { z-index: 6; }
+        #page5 { z-index: 5; }
+        #page6 { z-index: 4; }
+        #page7 { z-index: 3; }
+        #page8 { z-index: 2; }
+        #page9 { z-index: 1; }
+
+        /* Linhas decorativas */
+        .front::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(0,0,0,0) 97%, rgba(138,37,40,0.03) 3%) 0 0/100% 24px;
+            pointer-events: none;
+            border-radius: 8px;
+        }
+        .cover-front::after, #page7 .front::after { display: none; }
+
+    </style>
+</head>
+<body>
+
+    <div class="instrucao">Use as setas laterais para folhear</div>
+
+    <input type="checkbox" id="p1">
+    <input type="checkbox" id="p2">
+    <input type="checkbox" id="p3">
+    <input type="checkbox" id="p4">
+    <input type="checkbox" id="p5">
+    <input type="checkbox" id="p6">
+    <input type="checkbox" id="p7">
+    <input type="checkbox" id="p8">
+    <input type="checkbox" id="p9">
+
+    <label class="btn-nav btn-prev" id="prev1" for="p1">&#10094;</label>
+    <label class="btn-nav btn-prev" id="prev2" for="p2">&#10094;</label>
+    <label class="btn-nav btn-prev" id="prev3" for="p3">&#10094;</label>
+    <label class="btn-nav btn-prev" id="prev4" for="p4">&#10094;</label>
+    <label class="btn-nav btn-prev" id="prev5" for="p5">&#10094;</label>
+    <label class="btn-nav btn-prev" id="prev6" for="p6">&#10094;</label>
+    <label class="btn-nav btn-prev" id="prev7" for="p7">&#10094;</label>
+    <label class="btn-nav btn-prev" id="prev8" for="p8">&#10094;</label>
+    <label class="btn-nav btn-prev" id="prev9" for="p9">&#10094;</label>
+
+    <label class="btn-nav btn-next" id="next1" for="p1">&#10095;</label>
+    <label class="btn-nav btn-next" id="next2" for="p2">&#10095;</label>
+    <label class="btn-nav btn-next" id="next3" for="p3">&#10095;</label>
+    <label class="btn-nav btn-next" id="next4" for="p4">&#10095;</label>
+    <label class="btn-nav btn-next" id="next5" for="p5">&#10095;</label>
+    <label class="btn-nav btn-next" id="next6" for="p6">&#10095;</label>
+    <label class="btn-nav btn-next" id="next7" for="p7">&#10095;</label>
+    <label class="btn-nav btn-next" id="next8" for="p8">&#10095;</label>
+    <label class="btn-nav btn-next" id="next9" for="p9">&#10095;</label>
+
+    <div class="book">
+
+        <div class="page" id="page1">
+            <div class="front cover-front">
+                <h1>Para</h1>
+                <h1>Clérgia Furtado</h1>
+            </div>
+        </div>
+
+        <div class="page" id="page2">
+            <div class="front">
+                <div class="content">
+                    <div class="date-header">Parte 1</div>
+                    <p>Então... mais um 10/06...</p>
+                    <br>
+                    <p>Engraçado... sempre quando paro para pensar em você, me pergunto:</p>
+		    <div class="poem">
+                    <p>“O que ela tem?"</p>
+                    <p>"Por que faço isso tudo?”</p>
+		    </div>
+		    <p>É, não sei... só sei que se eu não fizer, me arrependerei eternamente.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="page" id="page3">
+            <div class="front">
+                <div class="content">
+                    <p>Todo os anos, eu penso em fazer algo que te impressione, que te encante, que te deixe feliz.</p>
+                    <p>E nunca tenho 100% de certeza se consigo alcançar esse objetivo, mas tenho 100% de certeza que sempre espera que eu tente.</p>
+                    <p>E é por isso que nunca canso, paro ou desisto... até porque, como já disse uma vez, o seu sorriso me faz sorrir.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="page" id="page4">
+            <div class="front">
+                <div class="content">
+                    <div class="date-header">Parte 2</div>
+                    <p>Neste ano, eu pensei em várias coisas, como sempre, mas sempre é difícil decidir!</p>
+                    <p>Como disse, eu tento sempre trazer uma nova experiência e isso é complicado... mas sempre, sempre, as coisas vão se encaixando e criando um cenário, algo que consigo imaginar, como por exemplo agora... você, na sua casa, em sua cama, lendo esta carta (o Correio não deixou) e já com os olhinhos puxados cheios de lágrimas!</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="page" id="page5">
+            <div class="front">
+                <div class="content">
+                    <p>É, eu idealizo muita coisa e posso até está errado sobre este momento, mas é por essa visão que me faz querer sempre fazer mais e mais por você.</p>
+                    <p>Dito tudo isso, para este ano, o objetivo não foi o presente, não foi o buquê, não foi o chocolate... foi de trazer essas palavras, escritas a "mão" até você!</p>
+                    <p>Isso tudo para lembrar que, desde 2019, você tem sido um refúgio, um alívio, um sonho, um presente para mim.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="page" id="page6">
+            <div class="front">
+                <div class="content">
+                    <div class="date-header">Parte 3</div>
+                    <p>Lembro da nossa conversa no carro como se fosse hoje a respeito de falar “eu te amo” para alguém e, hoje, isso sai naturalmente com a gente. Porém, te digo, nem isso é mais suficiente para expressar o carinho e propriamente o amor que sinto por você.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="page" id="page7">
+            <div class="front">
+                <div class="content">
+                    <p>Poderia falar muito mais, mas sei que essa data ainda se repetirá por muitos e muitos anos! Então, o clichê que não podermos esquecer: muita paz, saúde, felicidade, sucesso, prosperidade e que seus planos e objetivos possam se cumprir e ser alcançados. Ah, e para finalizar, faz tempo que não mando um poeminha, né?</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="page" id="page8">
+            <div class="front">
+                <div class="content">
+                    <div class="date-header">Vamos lá...</div>
+                    <br>
+		    <div class="poem">
+                        Estar longe, mas nunca distante<br>
+                        Ser presente, mas sem estar perto<br>
+                        Sim, é muito intrigante<br>
+                        Mas também, é algo bem concreto<br>
+                        <br>
+                        E é nesse verso curto<br>
+                        Que resume bem o “nosso amor”<br>
+                        Para a minha ADM,<br>
+                        Do seu contador.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="page" id="page9">
+            <div class="front" style="background: url(https://github.com/alannascimentolira-debug/forclergia/blob/main/Foto%202.jpeg?raw=true) center/cover no-repeat;"></div>
+        </div>
+
+    </div>
+
+</body>
+</html>
